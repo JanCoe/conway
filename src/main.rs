@@ -1,5 +1,5 @@
 use crossterm::{
-    cursor::MoveUp,
+    cursor::{MoveUp, MoveDown},
     terminal::{Clear, ClearType},
     ExecutableCommand,
 };
@@ -44,7 +44,7 @@ fn count_neighbours(point: &Point, grid: &Grid) -> usize {
 
 fn next_state(point: &Point, grid: &Grid) -> State {
     match count_neighbours(&point, grid) {
-        2 => grid.get(&point).unwrap().clone(),
+        2 => *grid.get(&point).unwrap(),
         3 => State::ALIVE,
         _ => State::DEAD,
     }
@@ -64,12 +64,10 @@ fn print_grid(area: &Area) {
 
 fn update_grid(area: &mut Area) {
     let old_grid = area.grid.clone();
-    for &ref point in old_grid.keys() {
+    for point in old_grid.keys() {
         area.grid
             .insert(point.clone(), next_state(&point, &old_grid));
     }
-    thread::sleep(time::Duration::from_millis(300));
-    print_grid(&area);
 }
 
 fn load_area() -> Area {
@@ -92,13 +90,16 @@ fn load_area() -> Area {
 }
 
 fn main() {
-    let mut area = load_area();
-
     let mut stdout = stdout();
     stdout.execute(Clear(ClearType::All)).unwrap();
 
-    for _ in 0..100 {
-        _ = stdout.execute(MoveUp(area.dims.row as u16));
+    let mut area = load_area();
+    let rows = area.dims.row as u16;
+    for _ in 0..10 {
         update_grid(&mut area);
+        print_grid(&area);
+        thread::sleep(time::Duration::from_millis(300));
+        _ = stdout.execute(MoveUp(rows));
     }
+    _ = stdout.execute(MoveDown(rows));
 }
